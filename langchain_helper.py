@@ -2,6 +2,9 @@ from langchain_openai import OpenAI
 from langchain_core.runnables import RunnableSequence
 from langchain.prompts import  PromptTemplate
 from dotenv import load_dotenv
+from langchain_community.agent_toolkits.load_tools import load_tools
+from langchain.agents import initialize_agent
+from langchain.agents import AgentType
 
 load_dotenv();
 
@@ -47,5 +50,49 @@ def generate_pet_name(animal_type, pet_color):
     response  = name_chain.invoke({"animal_type":animal_type, "pet_color":pet_color})
     return response
 
+# if __name__ == "__main__":
+#     print(generate_pet_name("cat", "Brown"))
+
+
+
+def langchain_agent():
+    # OpenAI LLM with a moderate temperature setting for balanced creativity and accuracy
+    llm = OpenAI(temperature=0.5)
+    
+    # Explanation of load_tools:
+    # load_tools is a LangChain function that initializes and returns a list of tool objects
+    # that an agent can use to interact with external systems or perform specific tasks.
+    # Here we're loading the Wikipedia tool which allows the agent to search and retrieve
+    # information from Wikipedia articles.
+    # We could add more tools like "llm-math" for calculations if needed.
+    # Each tool requires the LLM to properly interpret when and how to use it.
+    tools = load_tools(["wikipedia"], llm=llm)
+    # tools = load_tools(["wikipedia", "llm-math"], llm=llm)
+
+    # Explanation of initialize_agent:
+    # This function creates an agent that can use the provided tools to solve tasks.
+    # Parameters:
+    # - tools: The list of tools the agent can use
+    # - llm: The language model that powers the agent's reasoning
+    # - agent: The type of agent to create (determines the agent's reasoning strategy)
+    # - verbose: When True, shows the agent's step-by-step thinking (useful for debugging)
+    agent = initialize_agent(
+        tools,
+        llm,
+        # Explanation of AgentType.ZERO_SHOT_REACT_DESCRIPTION:
+        # This is an agent type from LangChain that implements the ReAct framework
+        # (Reasoning + Acting) without requiring examples (zero-shot).
+        # The agent follows this process:
+        # 1. Thinks about what to do (Reasoning)
+        # 2. Decides which tool to use (Acting)
+        # 3. Observes the result
+        # 4. Repeats until it can answer the question
+        # This agent type is effective for tasks requiring research and reasoning.
+        agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+        # verbose=True
+    )
+    result = agent.run("what is the average age of a dog?")
+    print(result)
+
 if __name__ == "__main__":
-    print(generate_pet_name("cat", "Brown"))
+    langchain_agent()
